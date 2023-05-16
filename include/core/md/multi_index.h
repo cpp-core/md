@@ -34,7 +34,7 @@ public:
     template<Span S>
     MultiIndex(const S& span, bool)
 	: MultiIndex(span) {
-	index_[0] = extents_[0] + 1;
+	index_[0] = extents_[0];
     }
 
     bool exhausted() const {
@@ -119,5 +119,11 @@ MultiIndex(std::array<T, R>) -> MultiIndex<T, R>;
 
 template<std::integral T, std::integral... Ts>
 MultiIndex(T size, Ts... sizes) -> MultiIndex<T, 1 + sizeof...(Ts)>;
+
+template<Span T>
+MultiIndex(const T&) -> MultiIndex<typename T::index_type, T::rank()>;
+
+template<Span T>
+MultiIndex(const T&, bool) -> MultiIndex<typename T::index_type, T::rank()>;
 
 }; // core::md

@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 #include "core/md/multi_index.h"
+#include "core/md/array.h"
 
 using namespace core::md;
 using ::testing::StaticAssertTypeEq;
@@ -57,6 +58,34 @@ TEST(MultiIndex, ConstructExtentsPack)
     static_assert(std::is_same_v<typename decltype(mdx)::IndexType, int>);
     static_assert(mdx.Rank == 3);
     check_index(mdx, {3, 4, 5});
+}
+
+TEST(MultiIndex, ConstructArray)
+{
+    fixed_array<int, 3, 4, 5> arr;
+    MultiIndex mdx(arr);
+    static_assert(std::is_same_v<typename decltype(mdx)::IndexType, int>);
+    static_assert(mdx.Rank == 3);
+    check_index(mdx, {3, 4, 5});
+}
+
+TEST(MultiIndex, ConstructSpan)
+{
+    fixed_array<int, 3, 4, 5> arr;
+    MultiIndex mdx(arr.to_mdspan());
+    static_assert(std::is_same_v<typename decltype(mdx)::IndexType, int>);
+    static_assert(mdx.Rank == 3);
+    check_index(mdx, {3, 4, 5});
+}
+
+TEST(MultiIndex, ConstructSpanEnd)
+{
+    fixed_array<int, 3, 4, 5> arr;
+    MultiIndex mdx(arr.to_mdspan(), true);
+    static_assert(std::is_same_v<typename decltype(mdx)::IndexType, int>);
+    static_assert(mdx.Rank == 3);
+    EXPECT_TRUE(mdx.exhausted());
+    EXPECT_EQ(mdx.index(), mdx.end_index());
 }
 
 int main(int argc, char *argv[])
