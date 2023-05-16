@@ -2,6 +2,7 @@
 //
 
 #include <algorithm>
+#include <compare>
 #include <iostream>
 #include <ranges>
 #include "core/md/array.h"
@@ -12,62 +13,85 @@
 
 namespace core::md {
 
-template<Span T>
-struct span_iterator {
-    using difference_type = std::ptrdiff_t;
-    using element_type = typename T::element_type;
-    using reference = element_type&;
-    using pointer = element_type*;
+template<std::integral T, size_t R>
+class MultiIndex {
+public:
+    static constexpr auto Rank = R;
+    using IndexType = T;
+    using Array = std::array<IndexType, Rank>;
 
-    using extents_type = typename T::extents_type;
-    using index_type = typename T::index_type;
-    static constexpr auto Rank = T::rank();
+    MultiIndex() { }
+
+    MultiIndex(const Array& extents)
+	: extents_(extents) {
+    }
+
+    template<Span S>
+    MultiIndex(const S& span) {
+	for (auto i = 0; i < Rank; ++i)
+	    extents_[i] = span.extent(i);
+    }
+
+    template<Span S>
+    MultiIndex(const S& span, bool)
+	: MultiIndex(span) {
+	index_[0] = extents_[0] + 1;
+    }
+
+    bool exhausted() const {
+	return index_[0] >= extents_[0];
+    }
     
-    struct sentinel { };
+    auto end_index() const {
+	Array idx{};
+	idx[0] = extents_[0] + 1;
+	return idx;
+    }
     
-    span_iterator()
-	: span_(nullptr) {
+    const auto& index() const {
+	return index_;
     }
 
-    span_iterator(T& span)
-	: span_(&span) {
+    auto& index() {
+	return index_;
     }
 
-    span_iterator(const span_iterator&) = default;
-    span_iterator(span_iterator&&) = default;
-    span_iterator& operator=(const span_iterator&) { return *this; };
-    span_iterator& operator=(span_iterator&&) { return *this; };
-
-    reference operator*() {
-	return (*span_)[index_];
+    const auto& operator[](int i) const {
+	return index_[i];
     }
 
-    reference operator*() const {
-	return (*span_)[index_];
+    auto& operator[](int i) {
+	return index_[i];
     }
 
-    pointer operator->() const {
-	return &(*span_)[index_];
+    const auto& extents() const {
+	return extents_;
     }
 
-    span_iterator& operator++() {
+    auto extent(size_t n) const {
+	return extents_[n];
+    }
+
+    auto operator++() {
 	increment();
 	return *this;
     }
 
-    span_iterator operator++(int) {
-	span_iterator tmp = *this;
-	++(*this);
+    auto operator++(int) {
+	auto tmp = *this;
 	increment();
 	return tmp;
     }
 
-    bool operator==(sentinel) const {
-	return index_[0] >= span_->extent(0);
+    bool operator==(const MultiIndex& other) const {
+	return index_ == other.index_;
     }
-
-    bool operator==(const span_iterator& other) const {
-	return (span_ == other.span_) and (index_ == other.index_);
+    
+    auto operator<=>(const MultiIndex& other) const {
+	for (auto i = 0; i < Rank; ++i)
+	    if (auto cmp = index_[i] <=> other[i]; cmp != 0)
+		return cmp;
+	return std::strong_ordering::equal;
     }
 
 private:
@@ -75,33 +99,161 @@ private:
     void increment() {
 	++index_[D];
 	if constexpr (D > 0) {
-	    if (index_[D] >= span_->extent(D)) {
+	    if (index_[D] >= extents_[D]) {
 		index_[D] = 0;
 		increment<D-1>();
 	    }
 	}
     }
+    
+    Array index_{}, extents_{};
+};
 
+template<class T, size_t R>
+struct index_iterator {
+    static constexpr auto Rank = R;
+    using Array = std::array<T, Rank>;
+    using Mdx = MultiIndex<T, Rank>;
+    
+    using difference_type = std::ptrdiff_t;
+    using element_type = Array;
+    using reference = element_type&;
+    using pointer = element_type*;
+
+    index_iterator() { }
+
+    template<Span S>
+    index_iterator(const S& span)
+	: mdx_(span) {
+    }
+
+    template<Span S>
+    index_iterator(const S& span, bool)
+	: mdx_(span, true) {
+    }
+
+    index_iterator(const Array& extents)
+	: mdx_(extents) {
+    }
+
+    index_iterator(const Array& index, const Array& extents)
+	: mdx_(index, extents) {
+    }
+
+    reference operator*() {
+	return mdx_.index();
+    }
+
+    reference operator*() const {
+	return mdx_.index();
+    }
+
+    pointer operator->() const {
+	return &(mdx_.index());
+    }
+
+    auto& operator++() {
+	++mdx_;
+	return *this;
+    }
+
+    auto operator++(int) {
+	index_iterator tmp = *this;
+	++mdx_;
+	return tmp;
+    }
+
+    auto operator<=>(const index_iterator& other) const = default;
+
+private:
+    Mdx mdx_;
+};
+
+template<Span T>
+index_iterator(const T&) -> index_iterator<typename T::index_type, T::rank()>;
+
+template<Span T>
+index_iterator(const T&, bool) -> index_iterator<typename T::index_type, T::rank()>;
+
+static_assert(std::forward_iterator<index_iterator<int,2>>);
+static_assert(std::forward_iterator<index_iterator<int,2>>);
+
+template<Span T>
+struct span_iterator {
+    static constexpr auto Rank = T::rank();
+    using index_type = typename T::index_type;
+    using Mdx = MultiIndex<index_type, Rank>;
+    
+    using difference_type = std::ptrdiff_t;
+    using element_type = typename T::element_type;
+    using reference = element_type&;
+    using pointer = element_type*;
+
+    struct sentinel { };
+    
+    span_iterator()
+	: span_(nullptr) {
+    }
+
+    span_iterator(T& span)
+	: span_(&span)
+	, mdx_(span) {
+    }
+
+    reference operator*() {
+	return (*span_)[mdx_.index()];
+    }
+
+    reference operator*() const {
+	return (*span_)[mdx_.index()];
+    }
+
+    pointer operator->() const {
+	return &(*span_)[mdx_.index()];
+    }
+
+    span_iterator& operator++() {
+	++mdx_;
+	return *this;
+    }
+
+    span_iterator operator++(int) {
+	span_iterator tmp = *this;
+	++mdx_;
+	return tmp;
+    }
+
+    bool operator==(sentinel) const {
+	return mdx_[0] >= span_->extent(0);
+    }
+
+    bool operator==(const span_iterator& other) const {
+	return (span_ == other.span_) and (mdx_ == other.mdx_);
+    }
+
+private:
     T *span_;
-    std::array<index_type, Rank> index_{};
+    Mdx mdx_{};
 };
 
 static_assert(std::forward_iterator<span_iterator<array<int,2>>>);
 static_assert(std::forward_iterator<span_iterator<span<int,2>>>);
-
-template<class ForwardIter1, class ForwardIter2, class Value>
-void fill(ForwardIter1 begin, ForwardIter2 end, Value value) {
-    while (begin != end) {
-	*begin = value;
-	++begin;
-    }
-}
 
 }; // core::md
 
 using std::cout, std::endl;
 
 namespace Kokkos {
+
+template<core::md::Span T>
+auto begin_index(T& span) {
+    return core::md::index_iterator(span);
+}
+    
+template<core::md::Span T>
+auto end_index(T& span) {
+    return core::md::index_iterator(span, true);
+}
 
 template<core::md::Span T>
 auto begin(T& span) {
@@ -114,6 +266,7 @@ auto end(T& span) {
 }
 
 }; // Kokkos
+
 
 template<core::md::Span T, core::md::Span U>
 requires (T::extents_type::rank() == U::extents_type::rank())
@@ -142,10 +295,10 @@ int main(int argc, const char *argv[]) {
     auto xs = x.to_mdspan();
     auto as = a.to_mdspan();
 
-    auto r = std::ranges::iota_view{1, 10};
-    for (auto i : r)
+    for (auto i : std::ranges::iota_view{1, 10})
 	cout << i << " ";
     cout << endl;
+
     std::ranges::fill(begin(xs), end(xs), 42);
     std::ranges::fill(begin(as), end(as), 42);
     assert(a.to_mdspan() == x.to_mdspan());
@@ -153,23 +306,17 @@ int main(int argc, const char *argv[]) {
     core::md::fixed_array<int, 3, 3> y{};
     core::md::shared<int, 2> z(7, 8);
 
-    for (auto i = 0; i < x.extent(0); ++i)
-	for (auto j = 0; j < x.extent(1); ++j)
-	    x[i, j] = i * x.extent(1) + j;
-    
-    for (auto i = 0; i < x.extent(0); ++i) {
-	for (auto j = 0; j < x.extent(1); ++j)
-	    cout << x[i, j] << " ";
-	cout << endl;
-    }
+    std::ranges::generate(begin(xs), end(xs), [n=0]() mutable { return n++; });
+    cout << "generate: " << endl << xs << endl;
 
-    cout << x << endl;
+    std::ranges::for_each(begin_index(xs), end_index(xs), [&](const auto& index) {
+	xs[index[0], index[1]] = index[0] * xs.extent(1) + index[1];
+    });
+    cout << "for_each: " << endl << xs << endl;
 
     core::md::fixed_array<int, 3, 3, 3> w{};
-    for (auto i = 0; i < w.extent(0); ++i)
-	for (auto j = 0; j < w.extent(1); ++j)
-	    for (auto k = 0; k < w.extent(2); ++k)
-		w[i, j, k] = i * w.extent(1) * w.extent(2) + j * w.extent(2) + k;
+    auto wx = w.to_mdspan();
+    std::ranges::generate(begin(wx), end(wx), [n=0]() mutable { return n++; });
     cout << w << endl;
 
     cout << x.size() << endl;
@@ -178,7 +325,6 @@ int main(int argc, const char *argv[]) {
     cout << z.size() << endl;
     cout << w.size() << endl;
 
-    auto wx = w.to_mdspan();
     for (auto elem : wx)
 	cout << elem << " ";
     
