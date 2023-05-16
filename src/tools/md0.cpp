@@ -1,7 +1,9 @@
 // Copyright (C) 2023 by Mark Melton
 //
 
+#include <algorithm>
 #include <iostream>
+#include <ranges>
 #include "core/md/array.h"
 #include "core/md/span.h"
 #include "core/md/shared.h"
@@ -9,29 +11,6 @@
 #include "core/md/concept.h"
 
 namespace core::md {
-
-template<std::integral T, size_t N>
-class IndexCounter {
-    template<std::integral... Ts>
-    IndexCounter(Ts... indices)
-	: last_(static_cast<T>(indices)...) {
-    }
-
-    const auto& index() const {
-	return index_;
-    }
-
-    void increment() {
-    }
-    
-    IndexCounter& operator++() {
-	increment();
-	return *this;
-    }
-
-private:
-    std::array<T, N> index_{}, last_{};
-};
 
 template<Span T>
 struct span_iterator {
@@ -46,17 +25,29 @@ struct span_iterator {
     
     struct sentinel { };
     
+    span_iterator()
+	: span_(nullptr) {
+    }
+
     span_iterator(T& span)
-	: span_(span) {
-	initialize_last_index();
+	: span_(&span) {
+    }
+
+    span_iterator(const span_iterator&) = default;
+    span_iterator(span_iterator&&) = default;
+    span_iterator& operator=(const span_iterator&) { return *this; };
+    span_iterator& operator=(span_iterator&&) { return *this; };
+
+    reference operator*() {
+	return (*span_)[index_];
     }
 
     reference operator*() const {
-	return span_[index_];
+	return (*span_)[index_];
     }
 
     pointer operator->() const {
-	return &span_[index_];
+	return &(*span_)[index_];
     }
 
     span_iterator& operator++() {
@@ -72,37 +63,57 @@ struct span_iterator {
     }
 
     bool operator==(sentinel) const {
-	for (auto i = 0; i < index_.size(); ++i)
-	    if (index_[i] != last_[i])
-		return false;
-	return true;
+	return index_[0] >= span_->extent(0);
+    }
+
+    bool operator==(const span_iterator& other) const {
+	return (span_ == other.span_) and (index_ == other.index_);
     }
 
 private:
-    using index_seq = std::index_sequence<Rank>;
-    
-    void initialize_last_index() {
-	for (auto i = 0; i < Rank; ++i)
-	    last_[i] = span_.extent(i);
-    }
-
+    template<int D = Rank - 1>
     void increment() {
-	for (int i = index_.size() - 1; i >= 0; --i) {
-	    if (index_[i] < last_[i]) {
-		++index_[i];
-		break;
+	++index_[D];
+	if constexpr (D > 0) {
+	    if (index_[D] >= span_->extent(D)) {
+		index_[D] = 0;
+		increment<D-1>();
 	    }
-	    index_[i] = 0;
 	}
     }
 
-    T& span_;
-    std::array<index_type, Rank> index_, last_;
+    T *span_;
+    std::array<index_type, Rank> index_{};
 };
+
+static_assert(std::forward_iterator<span_iterator<array<int,2>>>);
+static_assert(std::forward_iterator<span_iterator<span<int,2>>>);
+
+template<class ForwardIter1, class ForwardIter2, class Value>
+void fill(ForwardIter1 begin, ForwardIter2 end, Value value) {
+    while (begin != end) {
+	*begin = value;
+	++begin;
+    }
+}
 
 }; // core::md
 
 using std::cout, std::endl;
+
+namespace Kokkos {
+
+template<core::md::Span T>
+auto begin(T& span) {
+    return core::md::span_iterator(span);
+}
+
+template<core::md::Span T>
+auto end(T& span) {
+    return typename core::md::span_iterator<T>::sentinel{};
+}
+
+}; // Kokkos
 
 template<core::md::Span T, core::md::Span U>
 requires (T::extents_type::rank() == U::extents_type::rank())
@@ -112,16 +123,15 @@ constexpr bool operator==(const T& a, const U& b) {
     for (auto i = 0; i < rank; ++i)
 	if (a.extent(i) != b.extent(i))
 	    return false;
-    if constexpr (rank == 1) {
-	for (auto i = 0; i < a.extent(0); ++i)
-	    if (a[i] != b[i])
-		return false;
-    }
-    else if constexpr (rank == 2) {
-	for (auto i = 0; i < a.extent(0); ++i)
-	    for (auto j = 0; j < a.extent(1); ++j)
-		if (a[i, j] != b[i, j])
-		    return false;
+    auto aiter = begin(a);
+    auto aend = end(a);
+    auto biter = begin(b);
+    auto bend = end(b);
+    while (aiter != aend and biter != bend) {
+	if (*aiter != *biter)
+	    return false;
+	++aiter;
+	++biter;
     }
     return true;
 }
@@ -129,7 +139,16 @@ constexpr bool operator==(const T& a, const U& b) {
 int main(int argc, const char *argv[]) {
     core::md::array<int, 2> x(6, 10);
     core::md::array<int, 2> a(6, 10);
-    assert(a == x);
+    auto xs = x.to_mdspan();
+    auto as = a.to_mdspan();
+
+    auto r = std::ranges::iota_view{1, 10};
+    for (auto i : r)
+	cout << i << " ";
+    cout << endl;
+    std::ranges::fill(begin(xs), end(xs), 42);
+    std::ranges::fill(begin(as), end(as), 42);
+    assert(a.to_mdspan() == x.to_mdspan());
     
     core::md::fixed_array<int, 3, 3> y{};
     core::md::shared<int, 2> z(7, 8);
@@ -160,13 +179,8 @@ int main(int argc, const char *argv[]) {
     cout << w.size() << endl;
 
     auto wx = w.to_mdspan();
-    core::md::span_iterator iter(wx);
-    decltype(iter)::sentinel sentinel{};
-    while (iter != sentinel) {
-	cout << *iter << " ";
-	++iter;
-    }
-    cout << endl;
+    for (auto elem : wx)
+	cout << elem << " ";
     
     return 0;
 }

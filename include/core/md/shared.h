@@ -9,7 +9,7 @@ namespace detail {
 
 template<class ElementType>
 struct shared_ownership_handle {
-    std::shared_ptr<ElementType[]> base;
+    std::shared_ptr<ElementType> base;
     size_t offset;
 };
 
