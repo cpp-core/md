@@ -8,7 +8,7 @@
 using namespace core;
 using ::testing::StaticAssertTypeEq;
 
-TEST(MdSpan, Construct1d)
+TEST(Span, Construct1d)
 {
     std::array<int, 7> arr = { 0, 1, 2, 3, 4, 5, 6 };
     md::span<int, 1> x(arr.data(), arr.size());
@@ -18,7 +18,7 @@ TEST(MdSpan, Construct1d)
 	EXPECT_EQ(x[i], arr[i]);
 }
 
-TEST(MdSpan, Construct2d)
+TEST(Span, Construct2d)
 {
     std::array<int, 12> arr = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
     md::span<int, 2> x(arr.data(), 3, 4);
@@ -30,7 +30,7 @@ TEST(MdSpan, Construct2d)
 	    EXPECT_EQ((x[i, j]), arr[i * 4 + j]);
 }
 
-TEST(MdSpan, Construct3d)
+TEST(Span, Construct3d)
 {
     std::array<int, 12> arr = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
     md::span<int, 3> x(arr.data(), 3, 2, 2);
