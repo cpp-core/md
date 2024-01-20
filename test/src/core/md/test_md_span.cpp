@@ -1,4 +1,4 @@
-// Copyright (C) 2023 by Mark Melton
+// Copyright (C) 2023, 2024 by Mark Melton
 //
 
 #include <gtest/gtest.h>
@@ -42,6 +42,25 @@ TEST(Span, Construct3d)
 	for (auto j = 0; j < arr.size(); ++j)
 	    for (auto k = 0; k < arr.size(); ++k)
 		EXPECT_EQ((x[i, j, k]), arr[i * 4 + j * 2 + k]);
+}
+
+TEST(Span, Slice1d)
+{
+    std::array<int, 7> arr = { 0, 1, 2, 3, 4, 5, 6 };
+    md::span<int, 1> x(arr.data(), arr.size());
+    auto xs = md::slice(x, std::pair{2, 5});
+    EXPECT_EQ(xs.extent(0), 3);
+    for (auto i = 0; i < xs.size(); ++i)
+	EXPECT_EQ(xs[i], i + 2);
+}
+
+TEST(Span, Slice2d)
+{
+    std::array<int, 12> arr = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
+    md::span<int, 2> x(arr.data(), 3, 4);
+    // auto xs = md::slice(x, std::pair{0, 1});
+    // EXPECT_EQ(xs.extent(0), 1);
+    // EXPECT_EQ(xs.extent(1), 4);
 }
 
 int main(int argc, char *argv[])

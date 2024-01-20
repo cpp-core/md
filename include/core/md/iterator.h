@@ -1,4 +1,4 @@
-// Copyright (C) 2023 by Mark Melton
+// Copyright (C) 2023, 2024 by Mark Melton
 //
 
 #pragma once
@@ -6,7 +6,7 @@
 
 namespace core::md {
 
-template<Span T>
+template<class T>
 struct span_iterator {
     static constexpr auto Rank = T::rank();
     using index_type = typename T::index_type;
@@ -65,18 +65,4 @@ private:
 };
 
 }; // core::md
-
-namespace Kokkos {
-
-template<core::md::Span T>
-auto begin(T& span) {
-    return core::md::span_iterator(span);
-}
-
-template<core::md::Span T>
-auto end(T& span) {
-    return typename core::md::span_iterator<T>::sentinel{};
-}
-
-}; // Kokkos
 

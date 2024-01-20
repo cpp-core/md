@@ -1,9 +1,9 @@
-// Copyright (C) 2023 by Mark Melton
+// Copyright (C) 2023, 2024 by Mark Melton
 //
 
 #pragma once
 #include <array>
-#include "concept.h"
+#include <algorithm>
 
 namespace core::md {
 
@@ -25,13 +25,13 @@ public:
 	: extents_(std::array{size, sizes...}) {
     }
 
-    template<Span S>
+    template<class S>
     MultiIndex(const S& span) {
 	for (auto i = 0; i < Rank; ++i)
 	    extents_[i] = span.extent(i);
     }
 
-    template<Span S>
+    template<class S>
     MultiIndex(const S& span, bool)
 	: MultiIndex(span) {
 	index_[0] = extents_[0];
@@ -120,10 +120,10 @@ MultiIndex(std::array<T, R>) -> MultiIndex<T, R>;
 template<std::integral T, std::integral... Ts>
 MultiIndex(T size, Ts... sizes) -> MultiIndex<T, 1 + sizeof...(Ts)>;
 
-template<Span T>
+template<class T>
 MultiIndex(const T&) -> MultiIndex<typename T::index_type, T::rank()>;
 
-template<Span T>
+template<class T>
 MultiIndex(const T&, bool) -> MultiIndex<typename T::index_type, T::rank()>;
 
 }; // core::md

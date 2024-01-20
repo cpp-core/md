@@ -71,7 +71,7 @@ target_sources(md INTERFACE FILE_SET HEADERS BASE_DIRS include FILES ${PUBLIC_IN
 
 target_link_libraries(md INTERFACE std::mdspan)
 
-foreach(prog md0)
+foreach(prog md0 md1)
   add_executable(${prog} src/tools/${prog}.cpp)
   target_link_libraries(${prog} md::md)
 endforeach()

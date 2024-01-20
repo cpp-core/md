@@ -1,4 +1,4 @@
-// Copyright (C) 2023 by Mark Melton
+// Copyright (C) 2023, 2024 by Mark Melton
 //
 
 #pragma once
@@ -19,12 +19,12 @@ struct index_iterator {
 
     index_iterator() { }
 
-    template<Span S>
+    template<class S>
     index_iterator(const S& span)
 	: mdx_(span) {
     }
 
-    template<Span S>
+    template<class S>
     index_iterator(const S& span, bool)
 	: mdx_(span, true) {
     }
@@ -66,24 +66,11 @@ private:
     Mdx mdx_;
 };
 
-template<Span T>
+template<class T>
 index_iterator(const T&) -> index_iterator<typename T::index_type, T::rank()>;
 
-template<Span T>
+template<class T>
 index_iterator(const T&, bool) -> index_iterator<typename T::index_type, T::rank()>;
 
 }; // core::md
 
-namespace Kokkos {
-
-template<core::md::Span T>
-auto begin_index(T& span) {
-    return core::md::index_iterator(span);
-}
-    
-template<core::md::Span T>
-auto end_index(T& span) {
-    return core::md::index_iterator(span, true);
-}
-
-}; // Kokkos

@@ -1,7 +1,9 @@
-// Copyright (C) 2023 by Mark Melton
+// Copyright (C) 2023, 2024 by Mark Melton
 //
 
 #pragma once
+#include <memory>
+
 #include <mdspan/mdspan.hpp>
 
 namespace core::md {
