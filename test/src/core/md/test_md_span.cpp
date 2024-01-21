@@ -51,12 +51,12 @@ TEST(Span, Slice1d) {
     auto xs0 = md::slice(x, md::all);
     EXPECT_TRUE(x == xs0);
     
-    auto xs1 = md::slice(x, std::pair{2, 5});
+    auto xs1 = md::slice(x, md::x{2, 5});
     std::vector v1 = {2, 3, 4};
     md::span<int, 1> x1(v1.data(), v1.size());
     EXPECT_TRUE(xs1 == x1);
     
-    auto xs2 = md::slice(x, std::pair{0, -3});
+    auto xs2 = md::slice(x, md::x{0, -3});
     std::vector v2 = {0, 1, 2, 3};
     md::span<int, 1> x2(v2.data(), v2.size());
     EXPECT_TRUE(xs2 == x2);
@@ -65,11 +65,11 @@ TEST(Span, Slice1d) {
 TEST(Span, Slice2d) {
     std::array<int, 12> arr = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
     md::span<int, 2> x(arr.data(), 3, 4);
-    auto xs0 = md::slice(x, std::pair{0, 1}, md::all);
+    auto xs0 = md::slice(x, md::x{0, 1}, md::all);
     EXPECT_EQ(xs0.extent(0), 1);
     EXPECT_EQ(xs0.extent(1), 4);
     
-    auto xs1 = md::slice(x, std::pair{0, 2}, std::pair{0, 3});
+    auto xs1 = md::slice(x, md::x{0, 2}, md::x{0, 3});
     EXPECT_EQ(xs1.extent(0), 2);
     EXPECT_EQ(xs1.extent(1), 3);
 }

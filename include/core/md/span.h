@@ -52,6 +52,7 @@ auto end(const element_wise<T> &wrapper) {
 }
 
 inline constexpr auto all = Kokkos::full_extent;
+using x = std::pair<int, int>;
 
 namespace detail {
 inline auto normalize(size_t n, std::pair<int, int> extent) {
