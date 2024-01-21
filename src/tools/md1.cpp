@@ -35,10 +35,10 @@ int main(int argc, const char *argv[]) {
     // 	cout << elem << " ";
     // cout << endl;
     
-    core::md::shared<int, 1> v(12);
-    cout << v.rank() << endl;
-    cout << v.extent(0) << endl;
-    for (auto elem : v)
-	cout << elem << " ";
-    cout << endl;
+    // core::md::shared<int, 1> v(12);
+    // cout << v.rank() << endl;
+    // cout << v.extent(0) << endl;
+    // for (auto elem : v)
+    // 	cout << elem << " ";
+    // cout << endl;
 }
