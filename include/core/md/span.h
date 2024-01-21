@@ -2,10 +2,13 @@
 //
 
 #pragma once
+#include <optional>
+#include <type_traits>
+
+#include <mdspan/mdspan.hpp>
+
 #include "core/md/iterator.h"
 #include "traits.h"
-#include <mdspan/mdspan.hpp>
-#include <type_traits>
 
 namespace core::md {
 
@@ -48,10 +51,39 @@ auto end(const element_wise<T> &wrapper) {
     return typename span_iterator<T>::sentinel{};
 }
 
-template <SpanLike T, class... Slices>
-auto slice(T &&span, Slices... slices) {
+inline constexpr auto all = Kokkos::full_extent;
+
+namespace detail {
+inline auto normalize(size_t n, std::pair<int, int> extent) {
+    return std::make_pair(extent.first < 0 ? extent.first + n : extent.first,
+                          extent.second < 0 ? extent.second + n : extent.second);
+}
+
+inline auto normalize(size_t n, Kokkos::full_extent_t ext) { return ext; }
+}; // namespace detail
+
+template <SpanLike T, class S0>
+    requires(std::decay_t<T>::extents_type::rank() == 1)
+auto slice(T &&span, S0 s0) {
     return Kokkos::Experimental::submdspan(std::forward<T>(span),
-                                           std::forward<Slices>(slices)...);
+                                           detail::normalize(span.extent(0), s0));
+}
+
+template <SpanLike T, class S0, class S1>
+    requires(std::decay_t<T>::extents_type::rank() == 2)
+auto slice(T &&span, S0 s0, S1 s1) {
+    return Kokkos::Experimental::submdspan(std::forward<T>(span),
+                                           detail::normalize(span.extent(0), s0),
+                                           detail::normalize(span.extent(1), s1));
+}
+
+template <SpanLike T, class S0, class S1, class S2>
+    requires(std::decay_t<T>::extents_type::rank() == 3)
+auto slice(T &&span, S0 s0, S1 s1, S2 s2) {
+    return Kokkos::Experimental::submdspan(std::forward<T>(span),
+                                           detail::normalize(span.extent(0), s0),
+                                           detail::normalize(span.extent(1), s1),
+                                           detail::normalize(span.extent(2), s2));
 }
 
 }; // namespace core::md
