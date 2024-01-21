@@ -17,7 +17,7 @@ struct shared_ownership_handle {
 
 template<class ElementType>
 auto make_shared_ownership_handle(size_t n, size_t offset = 0) {
-    return shared_ownership_handle<ElementType>{std::make_shared<ElementType>(), offset};
+    return shared_ownership_handle<ElementType>{std::make_shared<ElementType>(n), offset};
 }
 
 template<std::integral... Sizes>
@@ -69,6 +69,6 @@ public:
 };
 
 template<class ElementType, size_t Rank, std::integral IndexType = int>
-using shared = mdshared<ElementType, Kokkos::dextents<IndexType, Rank>>;
+using shared_array = mdshared<ElementType, Kokkos::dextents<IndexType, Rank>>;
 
 }; // core::md

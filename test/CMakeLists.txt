@@ -7,6 +7,7 @@ find_package(Threads REQUIRED)
 set(TESTS
   md/multi_index
   md/span
+  md/shared_array
   )
 
 set(LIBRARIES
