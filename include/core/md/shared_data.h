@@ -11,13 +11,13 @@ namespace detail {
 
 template <class ElementType>
 struct shared_ownership_handle {
-    std::shared_ptr<ElementType> base;
+    std::shared_ptr<ElementType[]> base;
     size_t offset;
 };
 
 template <class ElementType>
 auto make_shared_ownership_handle(size_t n, size_t offset = 0) {
-    return shared_ownership_handle<ElementType>{std::make_shared<ElementType>(n), offset};
+    return shared_ownership_handle<ElementType>{std::make_shared<ElementType[]>(n), offset};
 }
 
 template <std::integral... Sizes>

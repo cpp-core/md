@@ -19,13 +19,13 @@ TEST(SharedArray, Make) {
 }
 
 TEST(SharedArray, MakeFromVec) {
-    std::vector<int> data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-    auto a = md::make_shared_data<int>(data, data.size());
+    std::vector<std::string> data = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"};
+    auto a = md::make_shared_data(data, data.size());
     auto b = md::slice(a, md::x{0,20});
     EXPECT_TRUE(a == b);
     EXPECT_EQ(a.extent(0), data.size());
     for (auto i = 0; i < a.extent(0); ++i)
-	EXPECT_EQ(a[i], i);
+	EXPECT_EQ(std::atoi(a[i].c_str()), i);
 }
 
 int main(int argc, char *argv[]) {
