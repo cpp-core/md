@@ -55,9 +55,11 @@ inline constexpr auto all = Kokkos::full_extent;
 using x = std::pair<int, int>;
 
 namespace detail {
-inline auto normalize(size_t n, std::pair<int, int> extent) {
-    return std::make_pair(extent.first < 0 ? extent.first + n : extent.first,
-                          extent.second < 0 ? extent.second + n : extent.second);
+inline auto normalize(int n, std::pair<int, int> extent) {
+    auto from = extent.first < 0 ? extent.first + n : extent.first;
+    auto to = extent.second < 0 ? extent.second + n : extent.second;
+    return std::make_pair(std::min(n, std::max(0, from)),
+			  std::min(n, std::max(0, to)));
 }
 
 inline auto normalize(size_t n, Kokkos::full_extent_t ext) { return ext; }
