@@ -3,7 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include "core/md/shared.h"
+#include "core/md/shared_data.h"
 #include "core/md/compare.h"
 
 using namespace core;
