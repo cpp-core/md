@@ -7,7 +7,6 @@
 #include <ranges>
 #include "core/md/array.h"
 #include "core/md/span.h"
-#include "core/md/shared.h"
 #include "core/md/ostream.h"
 #include "core/md/multi_index.h"
 #include "core/md/index_iterator.h"
