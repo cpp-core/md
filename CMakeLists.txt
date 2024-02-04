@@ -69,7 +69,7 @@ add_library(md::md ALIAS md) # Allow interop between FetchContent and FindPackag
 file(GLOB_RECURSE PUBLIC_INCLUDE_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} include/*.h)
 target_sources(md INTERFACE FILE_SET HEADERS BASE_DIRS include FILES ${PUBLIC_INCLUDE_FILES})
 
-target_link_libraries(md INTERFACE std::mdspan)
+target_link_libraries(md INTERFACE md::md std::mdspan)
 
 foreach(prog md0 md1)
   add_executable(${prog} src/tools/${prog}.cpp)
